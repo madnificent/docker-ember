@@ -30,6 +30,16 @@ then
     done
 fi
 
+# mount ssh keys folder
+if [ -n "$SSH_FOLDER" ]
+then
+    echo "ed will mount ssh keys folder $SSH_FOLDER"
+    linked_volumes="$linked_volumes --volume $SSH_FOLDER:/root/.ssh:ro "
+
+    # see issue https://github.com/ember-cli-deploy/ember-cli-deploy-revision-data/issues/52 for deploying in ember-cli-deploy context
+    linked_volumes="$linked_volumes -e GIT_DISCOVERY_ACROSS_FILESYSTEM=1 "
+fi
+
 docker run --rm \
        --volume `pwd`:/app/ \
        --volume /app/tmp \

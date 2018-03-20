@@ -40,21 +40,26 @@ function verify_path {
 
 # supporting function to create symlinks
 function npm_link {
-  link_target="$(pwd)"
-  package_name=$(package_name)
-  if beginswith '@' $package_name;then
-    scope=`echo $package_name | sed -r 's/^(@.*\/).*/\1/g'`
-    mkdir -p $NODE_M_PATH/$scope
-  fi
-  link_name="$NODE_M_PATH$package_name"
-  if [ -e $link_name ];then
-      unlink $link_name
-  fi
-  ln -s "$link_target" "$link_name"
-  if [ $? == 0 ];then
-    echo "created symlink for '$package_name' in node_modules"
-    echo "you can now add this addon to your project using 'edl $package_name'"
-  fi
+    link_target="$(pwd)"
+    package_name=$(package_name)
+    if beginswith '@' $package_name;then
+        if [[ "$OSTYPE" == "darwin"* ]]
+        then
+            scope=`echo "$package_name" | sed -E 's/^(@.*\/).*/\1/g'`
+        else
+            scope=`echo "$package_name" | sed -r 's/^(@.*\/).*/\1/g'`
+        fi
+        mkdir -p $NODE_M_PATH/$scope
+    fi
+    link_name="$NODE_M_PATH$package_name"
+    if [ -e $link_name ];then
+        unlink $link_name
+    fi
+    ln -s "$link_target" "$link_name"
+    if [ $? == 0 ];then
+        echo "created symlink for '$package_name' in node_modules"
+        echo "you can now add this addon to your project using 'edl $package_name'"
+    fi
 }
 
 # supporting function to create symlinks

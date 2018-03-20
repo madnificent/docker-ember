@@ -60,10 +60,14 @@ edi_calculate_linked_volumes_for_node_modules() {
             # echo "Checking folders: ${node_modules_search_folders[@]}"
             for folder in ${node_modules_search_folders[@]}
             do
-                for file in `find $folder -maxdepth 1 -type l`
+                for file in `find $folder -maxdepth 2 -type l`
                 do
                     # echo "Adding link: $file"
                     name=`basename $file`
+                    dirname=`dirname $file`
+                    if [  $dirname != $HOME/.local/lib/node_modules ]; then
+                      name=`basename $dirname`/$name
+                    fi
                     source_folder=`readlink "$HOME/.local/lib/node_modules/$name"`
                     if [ -n $EDI_MOUNT_USED_NODE_MODULES_WITHOUT_SYMLINKS ]
                     then
@@ -78,9 +82,13 @@ edi_calculate_linked_volumes_for_node_modules() {
         done
         echo "$linked_volumes"
     else
-        for file in `find $HOME/.local/lib/node_modules/ -maxdepth 1 -type l`
+        for file in `find $HOME/.local/lib/node_modules/ -maxdepth 2 -type l`
         do
             name=`basename $file`
+            dirname=`dirname $file`
+            if [  $dirname != $HOME/.local/lib/node_modules ]; then
+              name=`basename $dirname`/$name
+            fi
             real_target=`readlink $file`
             linked_volumes="$linked_volumes --volume $file:/usr/lib/node_modules/$name/:delegated "
         done

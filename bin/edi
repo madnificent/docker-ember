@@ -3,7 +3,7 @@
 # eg:
 #   edi ember release --minor
 
-VERSION="3.0.0"
+VERSION="3.3.0"
 
 if [ -r ~/.config/edi/settings ]
 then
@@ -136,7 +136,8 @@ edi_calculate_ssh_agent_options() {
 edi_calculate_standard_docker_options() {
     app_volumes="--volume `pwd`:/app/:cached \
                  --volume /app/tmp \
-                 --volume $HOME/.gitconfig:/root/.gitconfig:delegated "
+                 --volume $HOME/.gitconfig:/root/.gitconfig:delegated \
+                 --volume $HOME/.npmrc:/root/.npmrc:delegated"
     linked_volumes=`edi_calculate_linked_volumes_for_node_modules`
     edi_calculate_ssh_agent_options ssh_agent_options
 

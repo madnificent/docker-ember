@@ -38,10 +38,8 @@ function verify_path {
   fi
 }
 
-# supporting function to create symlinks
-function npm_link {
-    link_target="$(pwd)"
-    package_name=$(package_name)
+function get_scope {
+    package_name=$1
     if beginswith '@' $package_name;then
         if [[ "$OSTYPE" == "darwin"* ]]
         then
@@ -49,6 +47,15 @@ function npm_link {
         else
             scope=`echo "$package_name" | sed -r 's/^(@.*\/).*/\1/g'`
         fi
+    fi
+    echo $scope
+}
+# supporting function to create symlinks
+function npm_link {
+    link_target="$(pwd)"
+    package_name=$(package_name)
+    scope=`get_scope $package_name`
+    if [ -ne $scope ];then
         mkdir -p $NODE_M_PATH/$scope
     fi
     link_name="$NODE_M_PATH$package_name"
@@ -71,6 +78,17 @@ function npm_unlink {
     fi
 }
 
+function npm_link_package {
+    name=$1
+    scope=`get_scope $name`
+    if [  -e node_modules/$name ];then
+        echo "removing installed module"
+        rm -rf node_modules/$name
+    fi
+    mkdir -p node_modules/$scope
+    edi "ln -s /usr/lib/node_modules/$name /app/node_modules/$name"
+}
+
 function show_usage {
 		echo "usage: "
 		echo " edl  (create a symlink to package)"
@@ -84,7 +102,7 @@ if [[ $1 == "-h" ]];then
 elif [[ $# -eq 1 && $1 == "-u" ]]; then
     verify_path && npm_unlink
 elif [[ $# -eq 1 ]];then
-		edi npm link $1
+		npm_link_package $1
 elif [[ $# -eq 0 ]];then
 		verify_path && npm_link
 else

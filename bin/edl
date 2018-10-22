@@ -55,7 +55,7 @@ function npm_link {
     link_target="$(pwd)"
     package_name=$(package_name)
     scope=`get_scope $package_name`
-    if [ -ne $scope ];then
+    if [[ ! -e $scope ]];then
         mkdir -p $NODE_M_PATH/$scope
     fi
     link_name="$NODE_M_PATH$package_name"

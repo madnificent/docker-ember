@@ -22,6 +22,6 @@ edi_calculate_standard_docker_options standard_options
 docker run --rm \
        -it \
        $standard_options \
-       `edi_docker_server_exposed_ports_option $VERSION` \
+       `edi_docker_server_exposed_ports_option $@` \
        `edi_docker_host_option ` \
        $docker_image ember serve $@

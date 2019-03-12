@@ -203,11 +203,23 @@ edi_docker_host_option() {
 }
 
 edi_docker_server_exposed_ports_option() {
-    # We receive the ember version but ignore it for now
-    echo "-p 4200:4200 \
-          -p 7020:7020 \
-          -p 49152:49152 \
-          -p 49153:49153 "
+    for i in "$@"
+    do
+      case $i in
+        -p=*|--port=*)
+          EMBER_PORT="${i#*=}"
+        ;;
+        -lrp=*|--live-reload-port=*)
+          EMBER_LIVE_RELOAD_PORT="${i#*=}"
+        ;;
+        *)
+            # unknown option
+        ;;
+     esac
+   done
+
+    echo "-p ${EMBER_PORT:-4200}:${EMBER_PORT:-4200} \
+          -p ${EMBER_LIVE_RELOAD_PORT:-49152}:${EMBER_LIVE_RELOAD_PORT:-49152} "
 }
 
 #

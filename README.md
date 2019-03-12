@@ -45,7 +45,9 @@ non-interactive ember command.
     # No nonsense ember server
     eds
     # Proxying to your localhost (note it's been renamed from localhost to host)
-    eds --proxy http://host:8080
+    eds --proxy=http://host:8080
+    # Serving on a non default port
+    eds --port=4000 --live-reload-port=64000
 
 ### edi
 

@@ -87,6 +87,12 @@ source ~/.bashrc
 We suggest to use brew installation scripts to account for specific issues related to docker for mac.
 See: https://github.com/mu-semtech/homebrew-scripts
 
+## Configuration
+You can configure the Ember version in `~/.config/edi/settings` using the `VERSION` variable.
+```bash
+VERSION="3.15.1"
+```
+
 ## Additional notes
 
 ### On linux

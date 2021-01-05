@@ -29,6 +29,21 @@ edi_calculate_docker_image() {
     DOCKER_IMAGE="madnificent/ember:$ember_version"
 }
 
+# Prints out the docker volume options for host configuration of git and node
+# Prevent creating empty directories on host when config files do not exist
+edi_calculate_volumes_for_configuration() {
+  config_volumes=""
+  if [ -f $HOME/.gitconfig ]
+  then
+    config_volumes="$config_volumes --volume $HOME/.gitconfig:/root/.gitconfig:delegated"
+  fi
+  if [ -f $HOME/.npmrc ]
+  then
+    config_volumes="$config_volumes --volume $HOME/.npmrc:/root/.npmrc:delegated"
+  fi
+  echo $config_volumes
+}
+
 # Prints out the docker volume options for supporting the linked
 # node_volumes as constructed by the edl command.
 edi_calculate_linked_volumes_for_node_modules() {
@@ -123,13 +138,12 @@ edi_calculate_ssh_agent_options() {
 # EXPOSES $STANDARD_DOCKER_OPTIONS
 edi_calculate_standard_docker_options() {
     app_volumes="--volume '`pwd`':/app/:cached \
-                 --volume /app/tmp \
-                 --volume $HOME/.gitconfig:/root/.gitconfig:delegated \
-                 --volume $HOME/.npmrc:/root/.npmrc:delegated"
+                 --volume /app/tmp"
+    config_volumes=`edi_calculate_volumes_for_configuration`
     linked_volumes=`edi_calculate_linked_volumes_for_node_modules`
     edi_calculate_ssh_agent_options # SSH_AGENT_OPTIONS
 
-    STANDARD_DOCKER_OPTIONS="$app_volumes $linked_volumes $SSH_AGENT_OPTIONS"
+    STANDARD_DOCKER_OPTIONS="$app_volumes $config_volumes $linked_volumes $SSH_AGENT_OPTIONS"
 }
 
 # EXPOSES $EDI_DAEMON_CONTAINER_NAME

@@ -5,7 +5,7 @@
 #   ed npm install
 #   ed bower install
 
-VERSION="3.18.0"
+VERSION="3.25.3"
 
 if [ -r ~/.config/edi/settings ]
 then

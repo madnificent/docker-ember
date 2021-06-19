@@ -3,7 +3,7 @@
 # eg:
 #   edi ember release --minor
 
-VERSION="3.18.0"
+VERSION="3.26.1"
 
 if [ -r ~/.config/edi/settings ]
 then
@@ -121,10 +121,13 @@ edi_calculate_ssh_agent_options() {
             ssh-add
         fi
         ssh_agent_options="$(pinata-ssh-mount)"
-    else
+    elif [ -n "$SSH_AUTH_SOCK" ]
+    then
         # see https://gist.github.com/d11wtq/8699521
         ssh_agent_options="--volume $(dirname $SSH_AUTH_SOCK):$(dirname $SSH_AUTH_SOCK) \
                            -e SSH_AUTH_SOCK=$SSH_AUTH_SOCK"
+    else
+        ssh_agent_options=""
     fi
 
     SSH_AGENT_OPTIONS="$ssh_agent_options $known_hosts_volume_option"

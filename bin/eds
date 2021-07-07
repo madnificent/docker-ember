@@ -136,6 +136,9 @@ edi_calculate_ssh_agent_options() {
             ssh-add
         fi
         ssh_agent_options="$(pinata-ssh-mount)"
+    elif [ -z "$SSH_AUTH_SOCK" ]; then
+        echo "\$SSH_AUTH_SOCK not set! Is your SSH agent running?"
+        exit
     else
         # see https://gist.github.com/d11wtq/8699521
         ssh_agent_options="--volume $(dirname $SSH_AUTH_SOCK):$(dirname $SSH_AUTH_SOCK) \

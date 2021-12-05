@@ -81,12 +81,17 @@ function npm_unlink {
 function npm_link_package {
     name=$1
     scope=`get_scope $name`
-    if [  -e node_modules/$name ];then
+    if [[ -L node_modules/$name ]]
+    then
+        echo "removing previously linked module"
+        rm node_modules/$name
+    fi
+    if [ -e node_modules/$name ];then
         echo "removing installed module"
         rm -rf node_modules/$name
     fi
     mkdir -p node_modules/$scope
-    edi "ln -s /usr/lib/node_modules/$name /app/node_modules/$name"
+    edi "ln -fs /usr/lib/node_modules/$name /app/node_modules/$name"
 }
 
 function show_usage {

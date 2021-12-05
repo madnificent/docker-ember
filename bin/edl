@@ -91,7 +91,7 @@ function npm_link_package {
         rm -rf node_modules/$name
     fi
     mkdir -p node_modules/$scope
-    edi "ln -fs /usr/lib/node_modules/$name /app/node_modules/$name"
+    edi "ln -s /usr/lib/node_modules/$name /app/node_modules/$name"
 }
 
 function show_usage {

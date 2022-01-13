@@ -6,9 +6,9 @@ RUN export DEBIAN_FRONTEND=noninteractive; apt-get -y update; apt-get -y install
 RUN wget -qO- https://deb.nodesource.com/setup_16.x > node_setup.sh
 RUN bash node_setup.sh
 RUN apt-get -y install nodejs
-RUN npm install -g npm@7.18.1
+RUN npm install -g npm@8.3.0
 # Install bower
-RUN npm install -g bower@1.8.12
+RUN npm install -g bower@1.8.13
 RUN echo '{ "allow_root": true }' > /root/.bowerrc
 # Install yarn
 RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -

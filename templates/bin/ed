@@ -18,18 +18,16 @@ fi
 
 
 
-docker_image=`edi_calculate_docker_image`
-edi_calculate_standard_docker_options standard_options
+edi_calculate_docker_image # DOCKER_IMAGE
+edi_calculate_standard_docker_options # STANDARD_DOCKER_OPTIONS
 
 if [ -n "$EDI_USE_EDI_DAEMON" ]
 then
-    edi_start_edi_daemon daemon_name "$docker_image" "$standard_options"
+    edi_start_edi_daemon "$DOCKER_IMAGE" "$STANDARD_DOCKER_OPTIONS" # EDI_DAEMON_CONTAINER_NAME
 
     # run command
-    echo "Executing command $@ on $daemon_name"
-    docker exec -ti $daemon_name $@
+    echo "Executing command $@ on $EDI_DAEMON_CONTAINER_NAME"
+    docker exec -ti $EDI_DAEMON_CONTAINER_NAME $@
 else
-    docker run --rm \
-           $standard_options \
-           $docker_image $@
+    eval "docker run --rm $STANDARD_DOCKER_OPTIONS $DOCKER_IMAGE $@"
 fi

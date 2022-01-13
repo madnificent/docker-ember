@@ -5,7 +5,7 @@
 #   ed npm install
 #   ed bower install
 
-VERSION="3.3.0"
+VERSION="3.26.1"
 
 if [ -r ~/.config/edi/settings ]
 then
@@ -32,6 +32,7 @@ then
 fi
 
 # Calculates the desired ember version based on the current settings.
+# EXPOSES $DOCKER_IMAGE
 edi_calculate_docker_image() {
     ember_version=""
     if [ -n "$EDI_EMBER_VERSION" ]
@@ -41,7 +42,22 @@ edi_calculate_docker_image() {
         ember_version="$VERSION"
     fi
 
-    echo "madnificent/ember:$ember_version"
+    DOCKER_IMAGE="madnificent/ember:$ember_version"
+}
+
+# Prints out the docker volume options for host configuration of git and node
+# Prevent creating empty directories on host when config files do not exist
+edi_calculate_volumes_for_configuration() {
+  config_volumes=""
+  if [ -f $HOME/.gitconfig ]
+  then
+    config_volumes="$config_volumes --volume $HOME/.gitconfig:/root/.gitconfig:delegated"
+  fi
+  if [ -f $HOME/.npmrc ]
+  then
+    config_volumes="$config_volumes --volume $HOME/.npmrc:/root/.npmrc:delegated"
+  fi
+  echo $config_volumes
 }
 
 # Prints out the docker volume options for supporting the linked
@@ -60,20 +76,20 @@ edi_calculate_linked_volumes_for_node_modules() {
             # echo "Checking folders: ${node_modules_search_folders[@]}"
             for folder in ${node_modules_search_folders[@]}
             do
-                for file in `find $folder -maxdepth 2 -type l`
+                for file in `find "$folder" -maxdepth 2 -type l`
                 do
                     # echo "Adding link: $file"
-                    name=`basename $file`
-                    dirname=`dirname $file`
+                    name=`basename "$file"`
+                    dirname=`dirname "$file"`
                     if [  $dirname != $HOME/.local/lib/node_modules ]; then
-                      name=`basename $dirname`/$name
+                      name=`basename "$dirname"`/$name
                     fi
                     source_folder=`readlink "$HOME/.local/lib/node_modules/$name"`
                     if [ -n $EDI_MOUNT_USED_NODE_MODULES_WITHOUT_SYMLINKS ]
                     then
-                        linked_volumes="$linked_volumes --volume $source_folder:/app/node_modules/$name/:cached "
+                        linked_volumes="$linked_volumes --volume '$source_folder':/app/node_modules/$name/:cached "
                     else
-                        linked_volumes="$linked_volumes --volume $source_folder:/usr/lib/node_modules/$name/:cached "
+                        linked_volumes="$linked_volumes --volume '$source_folder':/usr/lib/node_modules/$name/:cached "
                     fi
                     node_modules_next_search_folders=("${node_modules_next_search_folders[@]}" "$source_folder/node_modules/")
                 done
@@ -84,13 +100,13 @@ edi_calculate_linked_volumes_for_node_modules() {
     else
         for file in `find $HOME/.local/lib/node_modules/ -maxdepth 2 -type l`
         do
-            name=`basename $file`
-            dirname=`dirname $file`
+            name=`basename "$file"`
+            dirname=`dirname "$file"`
             if [  $dirname != $HOME/.local/lib/node_modules ]; then
-              name=`basename $dirname`/$name
+              name=`basename "$dirname"`/$name
             fi
-            real_target=`readlink $file`
-            linked_volumes="$linked_volumes --volume $file:/usr/lib/node_modules/$name/:delegated "
+            real_target=`readlink "$file"`
+            linked_volumes="$linked_volumes --volume '$file':/usr/lib/node_modules/$name/:delegated "
         done
         echo "$linked_volumes"
     fi
@@ -98,6 +114,7 @@ edi_calculate_linked_volumes_for_node_modules() {
 
 # Prints out docker options needed for supporting the chosen ssh
 # agent.
+# EXPOSES SSH_AGENT_OPTIONS
 edi_calculate_ssh_agent_options() {
     mkdir -p $HOME/.ssh
     touch $HOME/.ssh/known_hosts
@@ -121,40 +138,42 @@ edi_calculate_ssh_agent_options() {
             ssh-add
         fi
         ssh_agent_options="$(pinata-ssh-mount)"
-    else
+    elif [ -n "$SSH_AUTH_SOCK" ]
+    then
         # see https://gist.github.com/d11wtq/8699521
         ssh_agent_options="--volume $(dirname $SSH_AUTH_SOCK):$(dirname $SSH_AUTH_SOCK) \
                            -e SSH_AUTH_SOCK=$SSH_AUTH_SOCK"
+    else
+        ssh_agent_options=""
     fi
 
-    all_options="$ssh_agent_options $known_hosts_volume_option"
-    eval "$1='$all_options'"
+    SSH_AGENT_OPTIONS="$ssh_agent_options $known_hosts_volume_option"
 }
 
 # Standard docker options including
 # - mounting of the application
 # - linked volumes for npm link
 # - options for sharing the ssh agent
+# EXPOSES $STANDARD_DOCKER_OPTIONS
 edi_calculate_standard_docker_options() {
-    app_volumes="--volume `pwd`:/app/:cached \
-                 --volume /app/tmp \
-                 --volume $HOME/.gitconfig:/root/.gitconfig:delegated \
-                 --volume $HOME/.npmrc:/root/.npmrc:delegated"
+    app_volumes="--volume '`pwd`':/app/:cached \
+                 --volume /app/tmp"
+    config_volumes=`edi_calculate_volumes_for_configuration`
     linked_volumes=`edi_calculate_linked_volumes_for_node_modules`
-    edi_calculate_ssh_agent_options ssh_agent_options
+    edi_calculate_ssh_agent_options # SSH_AGENT_OPTIONS
 
-    all_options="$app_volumes $linked_volumes $ssh_agent_options"
-    eval "$1='$all_options'"
+    STANDARD_DOCKER_OPTIONS="$app_volumes $config_volumes $linked_volumes $SSH_AGENT_OPTIONS"
 }
 
+# EXPOSES $EDI_DAEMON_CONTAINER_NAME
 edi_start_edi_daemon() {
     project_name=`basename $(pwd) | sed -e "s/ /-/g"`
     container_name="edi-$project_name"
 
     # sets return value
-    eval "$1=$container_name"
-    DOCKER_IMAGE=$2
-    DOCKER_OPTIONS=$3
+    EDI_DAEMON_CONTAINER_NAME="$container_name"
+    DOCKER_IMAGE=$1
+    DOCKER_OPTIONS=$2
 
     # check if daemon container runs, if not start it (and clean eventual exited containers)
     # see https://stackoverflow.com/questions/38576337/execute-bash-command-if-docker-container-does-not-exist
@@ -168,10 +187,7 @@ edi_start_edi_daemon() {
         # run new edi daemon
         echo "Starting container named $container_name"
 
-        docker run -td --name $container_name \
-               $DOCKER_OPTIONS \
-               $DOCKER_IMAGE
-
+        eval "docker run -td --name $container_name $DOCKER_OPTIONS $DOCKER_IMAGE"
         edi_wait_for_edi_daemon $container_name
     fi
 }
@@ -219,11 +235,23 @@ edi_docker_host_option() {
 }
 
 edi_docker_server_exposed_ports_option() {
-    # We receive the ember version but ignore it for now
-    echo "-p 4200:4200 \
-          -p 7020:7020 \
-          -p 49152:49152 \
-          -p 49153:49153 "
+    for i in "$@"
+    do
+      case $i in
+        -p=*|--port=*)
+          EMBER_PORT="${i#*=}"
+        ;;
+        -lrp=*|--live-reload-port=*)
+          EMBER_LIVE_RELOAD_PORT="${i#*=}"
+        ;;
+        *)
+            # unknown option
+        ;;
+     esac
+   done
+
+    echo "-p ${EMBER_PORT:-4200}:${EMBER_PORT:-4200} \
+          -p ${EMBER_LIVE_RELOAD_PORT:-49152}:${EMBER_LIVE_RELOAD_PORT:-49152} "
 }
 
 #
@@ -232,18 +260,16 @@ edi_docker_server_exposed_ports_option() {
 
 
 
-docker_image=`edi_calculate_docker_image`
-edi_calculate_standard_docker_options standard_options
+edi_calculate_docker_image # DOCKER_IMAGE
+edi_calculate_standard_docker_options # STANDARD_DOCKER_OPTIONS
 
 if [ -n "$EDI_USE_EDI_DAEMON" ]
 then
-    edi_start_edi_daemon daemon_name "$docker_image" "$standard_options"
+    edi_start_edi_daemon "$DOCKER_IMAGE" "$STANDARD_DOCKER_OPTIONS" # EDI_DAEMON_CONTAINER_NAME
 
     # run command
-    echo "Executing command $@ on $daemon_name"
-    docker exec -ti $daemon_name $@
+    echo "Executing command $@ on $EDI_DAEMON_CONTAINER_NAME"
+    docker exec -ti $EDI_DAEMON_CONTAINER_NAME $@
 else
-    docker run --rm \
-           $standard_options \
-           $docker_image $@
+    eval "docker run --rm $STANDARD_DOCKER_OPTIONS $DOCKER_IMAGE $@"
 fi

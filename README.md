@@ -45,7 +45,9 @@ non-interactive ember command.
     # No nonsense ember server
     eds
     # Proxying to your localhost (note it's been renamed from localhost to host)
-    eds --proxy http://host:8080
+    eds --proxy=http://host:8080
+    # Serving on a non default port
+    eds --port=4000 --live-reload-port=64000
 
 ### edi
 
@@ -84,6 +86,12 @@ source ~/.bashrc
 ### On Mac
 We suggest to use brew installation scripts to account for specific issues related to docker for mac.
 See: https://github.com/mu-semtech/homebrew-scripts
+
+## Configuration
+You can configure the Ember version in `~/.config/edi/settings` using the `VERSION` variable.
+```bash
+VERSION="3.15.1"
+```
 
 ## Additional notes
 

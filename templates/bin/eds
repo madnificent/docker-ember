@@ -16,12 +16,7 @@ fi
 
 
 
-docker_image=`edi_calculate_docker_image`
-edi_calculate_standard_docker_options standard_options
+edi_calculate_docker_image # DOCKER_IMAGE
+edi_calculate_standard_docker_options # STANDARD_DOCKER_OPTIONS
 
-docker run --rm \
-       -it \
-       $standard_options \
-       `edi_docker_server_exposed_ports_option $VERSION` \
-       `edi_docker_host_option ` \
-       $docker_image ember serve $@
+eval docker run --rm -it $STANDARD_DOCKER_OPTIONS `edi_docker_server_exposed_ports_option $@` `edi_docker_host_option ` $DOCKER_IMAGE ember serve $@

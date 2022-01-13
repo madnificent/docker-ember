@@ -51,27 +51,49 @@ then
     for file in `find . -type f`
     do
         cp "$file" "../$file"
-        sed -i "" "s/@EMBER_VERSION/$VERSION_NUMBER/" ../$file
-        # https://stackoverflow.com/questions/6790631/use-the-contents-of-a-file-to-replace-a-string-using-sed
-        sed -i "" -e "/@SUPPORT_SCRIPTS/r ../support-scripts" -e "/@SUPPORT_SCRIPTS/d" ../$file
+        if [[ "$OSTYPE" == "darwin"* ]]
+        then
+            sed -i "" "s/@EMBER_VERSION/$VERSION_NUMBER/" ../$file
+            # https://stackoverflow.com/questions/6790631/use-the-contents-of-a-file-to-replace-a-string-using-sed
+            sed -i "" -e "/@SUPPORT_SCRIPTS/r ../support-scripts" -e "/@SUPPORT_SCRIPTS/d" ../$file
+        else
+            sed -i "s/@EMBER_VERSION/$VERSION_NUMBER/" ../$file
+            # https://stackoverflow.com/questions/6790631/use-the-contents-of-a-file-to-replace-a-string-using-sed
+            sed -i -e "/@SUPPORT_SCRIPTS/r ../support-scripts" -e "/@SUPPORT_SCRIPTS/d" ../$file
+        fi
+
     done
 else
     echo "Not creating scripts...  exiting"
     exit 1;
 fi
 
+popd
+
 if $(answerPositive "Set $VERSION_NUMBER as your default version?")
 then
     echo "Writing ember version to ~/.config/edi/settings"
     if [ -r ~/.config/edi/settings ]
     then
-        sed -i "" "s/VERSION=.*/VERSION=\"$VERSION_NUMBER\"/" ~/.config/edi/settings
+        if [[ "$OSTYPE" == "darwin"* ]]
+        then
+            sed -i "" "s/VERSION=.*/VERSION=\"$VERSION_NUMBER\"/" ~/.config/edi/settings
+        else
+            sed -i "s/VERSION=.*/VERSION=\"$VERSION_NUMBER\"/" ~/.config/edi/settings
+        fi
     else
         mkdir -p ~/.config/edi
         echo "VERSION=\"$VERSION_NUMBER\"" > ~/.config/edi/settings
     fi
 else
     echo "Not changing settings in ~/.config/edi/settings"
+fi
+
+if $(answerPositive "Make local build of this version?")
+then
+    docker build . -t madnificent/ember:$VERSION_NUMBER
+else
+    echo "Not creating local build, continue with script"
 fi
 
 if $(answerPositive "Commit new version?")

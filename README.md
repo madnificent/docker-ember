@@ -95,7 +95,7 @@ VERSION="3.15.1"
 
 ## Additional notes
 
-### On linux
+### On Linux
 
 By default `ed*` commands run as root in the docker container, this means newly created files will be owned as root as well. To avoid this you can use user namespaces to map the container's root user to your own user. This requires some minimal configuration.
 
@@ -143,6 +143,19 @@ fi
 #### 2. Support the ssh-agent
 
 The ssh-agent's socket can't be shared with Docker for Mac at the time of writing.  A common workaround is to use a Docker container in which a new ssh-agent is ran.  We advise the use of the https://github.com/10eTechnology/docker-ssh-agent-forward and have integrated this in the supplied scripts.  On mac, this solution is assumed to be installed.
+
+### NPM upgrades
+It's important to note that since NPM v7 peer dependencies are installed by default when executing `npm install`. As of v3.27 the docker-ember image contains NPM >= v7.x. Using this version may lead to resolution conflict errors on peer dependencies in existing projects. NPM provides a [`--legacy-peer-deps` flag](https://docs.npmjs.com/cli/v7/using-npm/config#legacy-peer-deps) to make `npm install` behave like in previous versions, not installing peer dependencies by default. This can help teams to gradually fix the peer dependency version conflicts in their project.
+
+The `--legacy-peer-deps` flag can be enabled project-wide by adding `legacy-peer-deps=true` to `.npmrc`. In that case it's import to copy that file inside your project's Docker build before running `npm install`.
+
+Example Dockerfile:
+```
+FROM madnificent/ember
+COPY package.json .
+COPY .npmrc .   # <--- this line must be added
+RUN npm install
+```
 
 ## Experimental features
 

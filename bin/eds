@@ -220,14 +220,13 @@ edi_does_container_exist() {
 }
 
 edi_docker_host_option() {
-    if [[ "$OSTYPE" == "linux-gnu" ]]
-    then
-        # Linux
-        DOCKERHOST=`ip addr show docker0 | grep inet | head -n 1 | awk '{ print $2 }' | grep -oP "^[^/]+"`
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-        # Mac OSX
+    if [[ "$OSTYPE" == "darwin"* ]] || [ $(uname -r | sed -n 's/.*\( *Microsoft *\).*/\1/ip') ]; then
+        # Mac OSX and WSL2
         # Solution found via https://stackoverflow.com/questions/24319662/from-inside-of-a-docker-container-how-do-i-connect-to-the-localhost-of-the-mach
         DOCKERHOST=$(ifconfig | grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" | grep -v 127.0.0.1 | awk '{ print $2 }' | cut -f2 -d: | head -n1)
+    elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+        # Linux
+        DOCKERHOST=`ip addr show docker0 | grep inet | head -n 1 | awk '{ print $2 }' | grep -oP "^[^/]+"`
     fi
     echo "--add-host host:$DOCKERHOST "
 }

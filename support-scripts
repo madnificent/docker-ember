@@ -206,7 +206,7 @@ edi_does_container_exist() {
 }
 
 edi_docker_host_option() {
-    if [[ "$OSTYPE" == "linux-gnu" ]]
+    if [[ "$OSTYPE" == "linux-gnu" || "$OSTYPE" == "linux" ]]
     then
         # Linux
         DOCKERHOST=`ip addr show docker0 | grep inet | head -n 1 | awk '{ print $2 }' | grep -oP "^[^/]+"`
@@ -214,6 +214,9 @@ edi_docker_host_option() {
         # Mac OSX
         # Solution found via https://stackoverflow.com/questions/24319662/from-inside-of-a-docker-container-how-do-i-connect-to-the-localhost-of-the-mach
         DOCKERHOST=$(ifconfig | grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" | grep -v 127.0.0.1 | awk '{ print $2 }' | cut -f2 -d: | head -n1)
+    else
+        echo "OS TYPE $OSTYPE not understood"
+        exit 1
     fi
     echo "--add-host host:$DOCKERHOST "
 }

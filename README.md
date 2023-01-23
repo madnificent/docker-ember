@@ -184,3 +184,19 @@ We assume you are running an SSH agent container as mentioned earlier.  If your 
 On Mac, the socket of the native SSH agent can't be shared to the Docker image like we do in Linux.  We assume the necessary tooling is available on Mac to share the SSH agent.  Should you want to disable this feature, set `EDI_SSH_AGENT_CONTAINER` to an empty string.  If you want to force it to be turned on on Linux, then set it to a non-empty string.
 
 When you disable this option, your locally running socket will be shared.  When Docker for Mac starts supporting this feature, that will be the superior option.
+
+---
+
+## Building locally
+
+To build locally in any capacity, run the [release](release) script using the desired ember-cli version.
+Example usage: `./release 4.9.2`
+
+Several of the files in this repo are a result of building. See the table below for which files to change:
+
+|    File to change    |             ... for              |
+| -------------------- | -------------------------------- | 
+| templates/Dockerfile | for Dockerfile changes           |
+| support-scripts      | for changes in multiple binaries |
+| templates/bin/*      | for changes to specific binaries |
+

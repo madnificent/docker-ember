@@ -85,6 +85,88 @@ COPY .npmrc .   # <--- this line must be added
 RUN npm install
 ```
 
+### Creating a new app using Docker
+All commands (except for `ember serve` which deserves special attention), can be ran through the *edi* command.
+
+Let’s create a new project:
+```bash
+edi ember new my-edi-app
+```
+This will generate a new application.  Once all dependencies have been installed, we can move into the application folder, and start the ember server:
+```bash
+cd my-edi-app
+eds
+```
+
+You will see the application running.  Moving your browser to *http://localhost:4200*, you will see the `ember-welcome-page`.  Yay! It works \\o/
+
+Let’s remove the welcome-page.  As instructed, we’ll remove the `{{welcome-page}}` component from the build.  Open your favorite editor, and update the contents of *application.hbs* to contain the following instead.
+```hbs
+<h1>My first edi app</h1>
+
+{{outlet}}
+```
+
+We can generate new routes with the ember application still running.  Open a new terminal and open the *my-edi-app* folder.  Then generate the route:
+```bash
+edi ember generate route hello-link
+```
+
+Edit the *app/templates/hello-link.hbs* template so it contains the following
+```hbs
+<p>Hello!  This is some nested content from my first page.  {{link-to 'Go back' 'index'}}</p>
+```
+
+and add a link to *app/templates/application.hbs*
+```hbs
+<h1>My first edi app</h1>
+<p>{{link-to 'Hello' 'hello-link'}}</p>
+
+{{outlet}}
+```
+
+Boom, we have generated files which we can edit.  Lastly, we’ll install the *ember-cli-sass* addon as an example.
+
+```bash
+edi ember install ember-cli-sass
+```
+
+Now **restart eds** to ensure the ember server picks up the newly installed addon, remove the old *app/styles/app.css* and add a `background-color` to *app/styles/app.scss*
+```scss
+body {
+  background-color: green;
+}
+```
+
+#### Caveats
+
+There are some caveats with the use of edi.  First is configuring the ember version.  You can switch versions easily by editing a single file.  Next is configuring the backend to run against.
+
+- Configuring the ember version
+    You may want to have more than one ember version installed when generating new applications.  When breaking changes occur to ember-cli, or if you want to be sure to generate older applications.  Perhaps you simple don’t want to download all the versions of ember-cli.  Whatever your motives are, you can set  the version in *~/.config/edi/settings*
+
+    If the file or folder does not exist, create it.  You can write the following content to the file to change the version:
+
+    ```conf
+    VERSION="2.11.0"
+    ```
+
+    Supported versions are the tags available at [https://hub.docker.com/r/madnificent/ember/tags/](https://hub.docker.com/r/madnificent/ember/tags/).
+
+- Linking to a backend
+    Each Docker Container is a mini virtual machine.  In this virtual machine, the name _localhost_ indicates that little virtual machine.  We have defined the name _host_ to link to the machine serving the application.  In case you’d setup a mu.semte.ch architecture backend, published on port 80 of your localhost, you could connect your development frontend to it as such:
+
+    ```bash
+    eds --proxy http://host
+    ```
+
+    It is a common oversight to try to connect to localhost from the container instead.
+
+
+And you're done! Our EmberJS development has become a lot more consistent and maintainable with the use of edi.  We have used it extensively, and have been able to reproduce builds easily in the past year.
+
+*This tutorial has been adapted from Aad Versteden's mu.semte.ch article. You can view it [here](https://mu.semte.ch/2017/03/09/developing-emberjs-with-docker/)*
+
 ### Experimental features
 
 Some experimental features have been added which optimize the way the Docker daemon is called.  These features may behave oddly when developing addons.  It may be required to restart certain daemons after using edl, or to disable features when using edl.

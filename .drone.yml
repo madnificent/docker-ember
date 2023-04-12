@@ -50,29 +50,13 @@ trigger:
 ---
 kind: secret
 name: docker_username
-data: bjU6NUPceGcOWzo4GQbLZOcluwISTMqJnt0rTymzhG2xDZXFRVoq
+data: VcVrg2tUr7wjCbv555vpU8GSPLIMeepAVWgemq85k+tZN7hj9kWs
 ---
 kind: secret
 name: docker_password
-data: wSPbW073dVZtIVILr65JHz/NLWgLqCDksy+nj1yqSsKHTA2KDETRBtPNZ6/Fmh6AoDVIUVnnNva9hHHNzeCtDg==
----
-kind: secret
-name: docker_username
-data: 80d+NMFhblK0mKgi4f6mypyshSOYbpsmfXoAY4vgbz2M6CzS8UkF
----
-kind: secret
-name: docker_password
-data: UPYjVo8SslVHBGEL9fp7lrR8BCAuT03ATOKS2R8v1gd8hCju1A9NOLq217KyN+d+r7LINBJI/yFBn8OfLDfQhA==
----
-kind: secret
-name: docker_username
-data: H3EIWtAD6vGMYZpCuJNg5Pa0kc7AETa+wInVXtfTRi1tnUjpsywu
----
-kind: secret
-name: docker_password
-data: TGclgkuJbuqTpeK7j9WIEUcfsTXK8k25djV1ypuAItb0j/G2ZAjcb+jUtyqcGCwmNPJaVmeGsZ5x8CcXuL4vZw==
+data: zMnVSgFt0u/+zvhdMkQUjPyonunrvsHVfFpYqzo5nKQqktjQl13XmUqCVMSj/inH2Ra6UoUJRILq1+KY478ytw==
 ---
 kind: signature
-hmac: 3b2e124a4330cd7a8aad2f057030e375e5dbbbfa989a8a5b698f5a996592a5d2
+hmac: c50ea0c77d89adc76ff9c32eb1cd986c3f844ba63f3804e2d0517bce473db825
 
 ...

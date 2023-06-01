@@ -48,21 +48,7 @@ fi
 
 if $(answerPositive "Create new files from template?")
 then
-    for file in `find . -type f`
-    do
-        cp "$file" "../$file"
-        if [[ "$OSTYPE" == "darwin"* ]]
-        then
-            sed -i "" "s/@EMBER_VERSION/$VERSION_NUMBER/" ../$file
-            # https://stackoverflow.com/questions/6790631/use-the-contents-of-a-file-to-replace-a-string-using-sed
-            sed -i "" -e "/@SUPPORT_SCRIPTS/r ../support-scripts" -e "/@SUPPORT_SCRIPTS/d" ../$file
-        else
-            sed -i "s/@EMBER_VERSION/$VERSION_NUMBER/" ../$file
-            # https://stackoverflow.com/questions/6790631/use-the-contents-of-a-file-to-replace-a-string-using-sed
-            sed -i -e "/@SUPPORT_SCRIPTS/r ../support-scripts" -e "/@SUPPORT_SCRIPTS/d" ../$file
-        fi
-
-    done
+    $SCRIPT_FOLDER/apply-templates $VERSION_NUMBER
 else
     echo "Not creating scripts...  exiting"
     exit 1;

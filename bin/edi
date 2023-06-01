@@ -29,6 +29,16 @@ then
    fi
 fi
 
+# Find desired docker-ember version in Dockerfile
+edi_get_version_from_dockerfile() {
+  version_from_dockerfile=""
+  if [ -f Dockerfile ]
+  then
+    version_from_dockerfile=`cat Dockerfile | sed -E -n 's/FROM\smadnificent\/ember:(\S+)(\s+.*)?/\1/p'`
+  fi
+  echo $version_from_dockerfile
+}
+
 # Calculates the desired ember version based on the current settings.
 # EXPOSES $DOCKER_IMAGE
 edi_calculate_docker_image() {
@@ -36,6 +46,9 @@ edi_calculate_docker_image() {
     if [ -n "$EDI_EMBER_VERSION" ]
     then
         ember_version="$EDI_EMBER_VERSION"
+    elif [ -n "$(edi_get_version_from_dockerfile)" ]
+    then
+         ember_version="$(edi_get_version_from_dockerfile)"
     else
         ember_version="$VERSION"
     fi

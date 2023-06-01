@@ -13,7 +13,7 @@ build environment.
 
 With the advent of user-namespaces in Docker, mounting volumes with
 the right privileges has become
-transparant. (see http://www.jrslv.com/docker-1-10/#usernamespacesindocker
+transparent. (see http://www.jrslv.com/docker-1-10/#usernamespacesindocker
 for some basic info)
 
 The arguments you need to pass to the Docker run command for it to be

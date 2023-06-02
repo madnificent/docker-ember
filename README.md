@@ -114,13 +114,13 @@ edi ember generate route hello-link
 
 Edit the *app/templates/hello-link.hbs* template so it contains the following
 ```hbs
-<p>Hello!  This is some nested content from my first page.  {{link-to 'Go back' 'index'}}</p>
+<p>Hello!  This is some nested content from my first page.  <LinkTo @route='index'>Go back</LinkTo></p>
 ```
 
 and add a link to *app/templates/application.hbs*
 ```hbs
 <h1>My first edi app</h1>
-<p>{{link-to 'Hello' 'hello-link'}}</p>
+<p><LinkTo @route='hello-link'>Hello</LinkTo></p>
 
 {{outlet}}
 ```

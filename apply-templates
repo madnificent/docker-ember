@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+##
+# this script will apply templates in the repository to prepare for a docker build
+# note that the ember version defaults to the version used in "edi" when a version is not provided
+##
+
+# dont allow unset variables and exit on error
+set -ue
+
+if [[ "$OSTYPE" == "darwin"* ]]
+then
+    SCRIPT_FOLDER=`dirname "$(readlink "$0")"`
+else
+    SCRIPT_FOLDER=`dirname "$(readlink -f "$0")"`
+fi
+
+DEFAULT_VERSION_NUMBER=`grep "VERSION=" $SCRIPT_FOLDER/bin/edi | grep -oP "\\d+[^\"']+"`
+VERSION_NUMBER="${1:-$DEFAULT_VERSION_NUMBER}"
+
+pushd "$SCRIPT_FOLDER/templates"
+for file in `find . -type f`
+do
+    cp "$file" "../$file"
+    if [[ "$OSTYPE" == "darwin"* ]]
+    then
+        sed -i "" "s/@EMBER_VERSION/$VERSION_NUMBER/" ../$file
+        # https://stackoverflow.com/questions/6790631/use-the-contents-of-a-file-to-replace-a-string-using-sed
+        sed -i "" -e "/@SUPPORT_SCRIPTS/r ../support-scripts" -e "/@SUPPORT_SCRIPTS/d" ../$file
+    else
+        sed -i "s/@EMBER_VERSION/$VERSION_NUMBER/" ../$file
+        # https://stackoverflow.com/questions/6790631/use-the-contents-of-a-file-to-replace-a-string-using-sed
+        sed -i -e "/@SUPPORT_SCRIPTS/r ../support-scripts" -e "/@SUPPORT_SCRIPTS/d" ../$file
+    fi
+done

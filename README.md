@@ -27,7 +27,7 @@ VERSION="3.15.1"
 
 #### Configuring on Linux
 
-By default `ed*` commands run as root in the docker container, this means newly created files will be owned as root as well. To avoid this you can use user namespaces to map the container's root user to your own user. This requires some minimal configuration.
+By default `ed*` commands run as root in the docker container, this means newly created files will be owned as root as well. To avoid this you can use user namespaces to map the container's root user to your own user. This requires some configuration and can be done with dockerd running as root (default) or as your user (see [Configuring on Linux (rootless)](#configuring-on-linux-rootless)).
 
 *Note*: on ubuntu 16.04 your user needs to part of the docker group so that it has access to `/var/run/docker.sock`
 
@@ -38,6 +38,9 @@ Assuming systemd and access to the `id` command the following steps should suffi
     echo "$( whoami ):$(id -u):65536" |  sudo tee -a /etc/subuid
     echo "$( whoami ):$(id -g):65536" |  sudo tee -a /etc/subgid
     ```
+
+> [!NOTE]
+> Using the above user maps mean that the user `0` (root) inside the container are mapped to your user id on the host, *the id for every user above that is mapped to your-id + their-id*. This means that any containers which run non-root processes could appear to be running as real users on your system. This is unlikely to cause problems unless you have an unusual user configuration.
 
 2. **Adjust ExecStart of docker daemon to include `--userns-remap=ns1`.**
     For systemd you can use the following command:
@@ -53,6 +56,16 @@ Assuming systemd and access to the `id` command the following steps should suffi
     ```
 
 More information on user namespaces is available [in the docker documentation](https://docs.docker.com/engine/security/userns-remap/).
+
+##### Configuring on Linux (rootless)
+
+More recent versions of Docker can run in 'rootless' mode, running the docker daemon as a normal user instead of root. When running in this mode, the root user inside containers is always mapped to the host user, so no special `subuid` or `subgid` configuration are required. Users inside containers with uids >0 are mapped according to the `subuid` configuration.
+
+This may cause some issues with other images as some features are not yet supported in rootless.
+
+For more details and configuration steps, see the [Docker Rootless](https://docs.docker.com/engine/security/rootless) documentation as well as any relevant documentation for your distro (e.g. [Arch Wiki](https://wiki.archlinux.org/title/Docker#Rootless_Docker_daemon)).
+
+While not directly needed for docker-ember, many projects make use of ports < 1024, which by default require root to allocate. If you wish to continue with this, follow [the instructions in the documentation](https://docs.docker.com/engine/security/rootless/#exposing-privileged-ports).
 
 #### Configuring on Mac
 

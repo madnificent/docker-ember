@@ -248,33 +248,62 @@ edi_docker_host_option() {
     echo "--add-host host:$DOCKERHOST "
 }
 
-edi_docker_server_exposed_ports_option() {
-    for i in "$@"
-    do
-      case $i in
-        -p=*|--port=*)
-          EMBER_PORT="${i#*=}"
-        ;;
-        -lrp=*|--live-reload-port=*)
-          EMBER_LIVE_RELOAD_PORT="${i#*=}"
-        ;;
-        *)
-            # unknown option
-        ;;
-     esac
-   done
-
-    echo "-p ${EMBER_PORT:-4200}:${EMBER_PORT:-4200} \
-          -p ${EMBER_LIVE_RELOAD_PORT:-49152}:${EMBER_LIVE_RELOAD_PORT:-49152} "
-}
-
 #
 # END SUPPORT SCRIPTS
 #
 
 
 
+echo_help() {
+    echo "Serve an ember application within docker, optionally proxying to an api reachable on a docker network."
+    echo "Options:"
+    echo "-n=string|--network=string  connect the docker container to an existing docker network"
+    echo "-a|--add-host set a hostname 'host' inside the docker container that points to the host machine"
+    echo "-p=number|--port=number   serve the Ember app on given port"
+    echo "-lrp=number|--live-reload-port=number   port to use for live-reload websocket connection"
+    echo "-h|--help print this help"
+    echo "Any arguments other than --network and --add-host will be forwarded to the ember serve command"
+    echo "For backwards compatibility, not specifying --network implies --add-host"
+    echo "This may fail if you're using a rootless docker daemon"
+}
+
+for i in "$@"
+do
+  case $i in
+    -p=*|--port=*)
+        EMBER_PORT="${i#*=}"
+        EMBER_ARGS="$EMBER_ARGS $i"
+    ;;
+    -lrp=*|--live-reload-port=*)
+        EMBER_LIVE_RELOAD_PORT="${i#*=}"
+        EMBER_ARGS="$EMBER_ARGS $i"
+    ;;
+    -n=*|--network=*)
+        PROXY_NETWORK_OPTION="--network=${i#*=}"
+    ;;
+    -a|--add-host)
+        DOCKER_HOST_OPTION=$(edi_docker_host_option)
+    ;;
+    -h|--help)
+        echo_help
+        EMBER_ARGS="$EMBER_ARGS $i"
+    ;;
+    *)
+        # Unknown option, pass through to ember serve
+        EMBER_ARGS="$EMBER_ARGS $i"
+    ;;
+ esac
+done
+if [ -z "$PROXY_NETWORK_OPTION" ] && [ -z "$DOCKER_HOST_OPTION" ]
+then
+    echo "No --network specified, defaulting to adding a hostname in the container"
+    DOCKER_HOST_OPTION=$(edi_docker_host_option)
+fi
+
+EXPOSED_PORTS="-p ${EMBER_PORT:-4200}:${EMBER_PORT:-4200} \
+      -p ${EMBER_LIVE_RELOAD_PORT:-49152}:${EMBER_LIVE_RELOAD_PORT:-49152} "
+
 edi_calculate_docker_image # DOCKER_IMAGE
 edi_calculate_standard_docker_options # STANDARD_DOCKER_OPTIONS
 
-eval docker run --rm -it $STANDARD_DOCKER_OPTIONS `edi_docker_server_exposed_ports_option $@` `edi_docker_host_option ` $DOCKER_IMAGE ember serve $@
+eval docker run --rm -it $STANDARD_DOCKER_OPTIONS $EXPOSED_PORTS $DOCKER_HOST_OPTION $PROXY_NETWORK_OPTION $DOCKER_IMAGE ember serve $EMBER_ARGS

@@ -167,10 +167,10 @@ There are some caveats with the use of edi.  First is configuring the ember vers
     Supported versions are the tags available at [https://hub.docker.com/r/madnificent/ember/tags/](https://hub.docker.com/r/madnificent/ember/tags/).
 
 - Linking to a backend
-    Each Docker Container is a mini virtual machine.  In this virtual machine, the name _localhost_ indicates that little virtual machine.  We have defined the name _host_ to link to the machine serving the application.  In case you’d setup a mu.semte.ch architecture backend, published on port 80 of your localhost, you could connect your development frontend to it as such:
+    Each Docker Container is a mini virtual machine.  In this virtual machine, the name _localhost_ indicates that little virtual machine.  `eds` gives two options for this, the `--add-host` option sets the name _host_ to link to the machine serving the application, `--network=some-docker-network` connects the virtual machine to a network defined by docker.  For example if you're using a [Semantic Works](https://semantic.works/) architecture backend, published on port 80 in a docker compose project called `my-project`, you could connect your development frontend to it as such:
 
     ```bash
-    eds --proxy http://host
+    eds --network=my-project_default --proxy http://identifier
     ```
 
     It is a common oversight to try to connect to localhost from the container instead.
@@ -237,7 +237,9 @@ non-interactive ember command.
     # No nonsense ember server
     eds
     # Proxying to your localhost (note it's been renamed from localhost to host)
-    eds --proxy=http://host:8080
+    eds --add-host --proxy=http://host:8080
+    # Proxying to a docker network
+    eds --network=network-name --proxy=http://service:8080
     # Serving on a non default port
     eds --port=4000 --live-reload-port=64000
 ```

@@ -250,26 +250,6 @@ edi_docker_host_option() {
     echo "--add-host host:$DOCKERHOST "
 }
 
-edi_docker_server_exposed_ports_option() {
-    for i in "$@"
-    do
-      case $i in
-        -p=*|--port=*)
-          EMBER_PORT="${i#*=}"
-        ;;
-        -lrp=*|--live-reload-port=*)
-          EMBER_LIVE_RELOAD_PORT="${i#*=}"
-        ;;
-        *)
-            # unknown option
-        ;;
-     esac
-   done
-
-    echo "-p ${EMBER_PORT:-4200}:${EMBER_PORT:-4200} \
-          -p ${EMBER_LIVE_RELOAD_PORT:-49152}:${EMBER_LIVE_RELOAD_PORT:-49152} "
-}
-
 #
 # END SUPPORT SCRIPTS
 #

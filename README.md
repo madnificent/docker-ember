@@ -177,19 +177,11 @@ There are some caveats with the use of edi.  First is configuring the ember vers
     You may want to have more than one ember version installed when generating new applications.  See [Picking an Ember Version](#picking-an-ember-version)
 
 - Linking to a backend
-    Multiple options exist for proxying to a backend.  When proxying to localhost use `--proxy=http://host/` instead of `--proxy=http://localhost/`.  See Proxy to a local port (default) and Proxy to a Docker Compose service (advanced) for your options.
+    Multiple options exist for proxying to a backend.  When proxying to localhost use `--proxy=http://host/` instead of `--proxy=http://localhost/`.  See [Proxy to a local port (default)](proxy-to-a-local-port-(default)) and [Proxy to a Docker Compose service (advanced)](proxy-to-a-docker-compose-service-(advanced)] for your options.
 
 And you're done! Our EmberJS development has become a lot more consistent and maintainable with the use of edi.  We have used it extensively, and have been able to reproduce builds easily in the past year.
 
 *This tutorial has been adapted from Aad Versteden's mu.semte.ch article. You can view it [here](https://mu.semte.ch/2017/03/09/developing-emberjs-with-docker/)*
-
-
-    Use `--proxy=http://host/`
-
-
-
-    It is a common oversight to try to connect to localhost from the container instead.
-
 
 ### Experimental features
 

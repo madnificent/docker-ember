@@ -2,13 +2,12 @@
 
 Docker and tooling for using ember-cli in a reproducable way.
 
-<br>
-
 ## Getting Started
 ### Installation
 
 #### On Linux
 Assuming you have docker set up correctly, simply clone this repository and add the bin folder to your path.
+
 ```bash
 git clone https://github.com/madnificent/docker-ember.git
 echo "export PATH=\$PATH:`pwd`/docker-ember/bin" >> ~/.bashrc
@@ -18,18 +17,32 @@ source ~/.bashrc
 We suggest to use brew installation scripts to account for specific issues related to docker for mac.
 See: https://github.com/mu-semtech/homebrew-scripts
 
-
 ### Configuration
-You can configure the Ember version in `~/.config/edi/settings` using the `VERSION` variable.
+#### Picking an Ember Version
+
+The version of docker-ember can be selected for situations where it is not known, otherwise Docker Ember tries to select the correct version.
+
+When visiting a folder which has a Dockerfile with a docker-ember version in it, that version will be used by docker-ember.  This allows fluidly switching between projects.
+
+For cases where no version can be found, docker-ember's version can be specified in `~/.config/edi/settings` using the `VERSION` variable.
 ```bash
-VERSION="3.15.1"
+VERSION="5.3.0"
 ```
 
-#### Configuring on Linux
+For one-time use, you can set `EDI_EMBER_VERSION` to the desired version:
+
+```bash
+EDI_EMBER_VERSION="5.3.0" edi ember version
+```
+
+Supported versions are the tags available at [https://hub.docker.com/r/madnificent/ember/tags/](https://hub.docker.com/r/madnificent/ember/tags/).
+
+#### Linux configuration with user namespaces (advised)
 
 By default `ed*` commands run as root in the docker container, this means newly created files will be owned as root as well. To avoid this you can use user namespaces to map the container's root user to your own user. This requires some configuration and can be done with dockerd running as root (default) or as your user (see [Configuring on Linux (rootless)](#configuring-on-linux-rootless)).
 
-*Note*: on ubuntu 16.04 your user needs to part of the docker group so that it has access to `/var/run/docker.sock`
+> [!NOTE]
+> on ubuntu 16.04 your user needs to part of the docker group so that it has access to `/var/run/docker.sock`
 
 Assuming systemd and access to the `id` command the following steps should suffice:
 
@@ -57,7 +70,10 @@ Assuming systemd and access to the `id` command the following steps should suffi
 
 More information on user namespaces is available [in the docker documentation](https://docs.docker.com/engine/security/userns-remap/).
 
-##### Configuring on Linux (rootless)
+#### Linux configuration with rootless docker
+
+> [NOTE]
+> At this point we advise to use user namespaces instead, though if you have some experience with docker then rootless docker is a bright future.
 
 More recent versions of Docker can run in 'rootless' mode, running the docker daemon as a normal user instead of root. When running in this mode, the root user inside containers is always mapped to the host user, so no special `subuid` or `subgid` configuration are required. Users inside containers with uids >0 are mapped according to the `subuid` configuration.
 
@@ -66,6 +82,8 @@ This may cause some issues with other images as some features are not yet suppor
 For more details and configuration steps, see the [Docker Rootless](https://docs.docker.com/engine/security/rootless) documentation as well as any relevant documentation for your distro (e.g. [Arch Wiki](https://wiki.archlinux.org/title/Docker#Rootless_Docker_daemon)).
 
 While not directly needed for docker-ember, many projects make use of ports < 1024, which by default require root to allocate. If you wish to continue with this, follow [the instructions in the documentation](https://docs.docker.com/engine/security/rootless/#exposing-privileged-ports).
+
+Using `--add-host` is not supported in rootless docker, instead join the desired network and connect directly to the service instead as per [Proxy to a Docker Compose service (advanced)](#proxy-to-a-docker-compose-service-(advanced)).
 
 #### Configuring on Mac
 
@@ -98,7 +116,7 @@ COPY .npmrc .   # <--- this line must be added
 RUN npm install
 ```
 
-### Creating a new app using Docker
+### Creating a new app using docker-ember
 All commands (except for `ember serve` which deserves special attention), can be ran through the *edi* command.
 
 Let’s create a new project:
@@ -156,29 +174,22 @@ body {
 There are some caveats with the use of edi.  First is configuring the ember version.  You can switch versions easily by editing a single file.  Next is configuring the backend to run against.
 
 - Configuring the ember version
-    You may want to have more than one ember version installed when generating new applications.  When breaking changes occur to ember-cli, or if you want to be sure to generate older applications.  Perhaps you simple don’t want to download all the versions of ember-cli.  Whatever your motives are, you can set  the version in *~/.config/edi/settings*
-
-    If the file or folder does not exist, create it.  You can write the following content to the file to change the version:
-
-    ```conf
-    VERSION="2.11.0"
-    ```
-
-    Supported versions are the tags available at [https://hub.docker.com/r/madnificent/ember/tags/](https://hub.docker.com/r/madnificent/ember/tags/).
+    You may want to have more than one ember version installed when generating new applications.  See [Picking an Ember Version](#picking-an-ember-version)
 
 - Linking to a backend
-    Each Docker Container is a mini virtual machine.  In this virtual machine, the name _localhost_ indicates that little virtual machine.  `eds` gives two options for this, the `--add-host` option sets the name _host_ to link to the machine serving the application, `--network=some-docker-network` connects the virtual machine to a network defined by docker.  For example if you're using a [Semantic Works](https://semantic.works/) architecture backend, published on port 80 in a docker compose project called `my-project`, you could connect your development frontend to it as such:
-
-    ```bash
-    eds --network=my-project_default --proxy http://identifier
-    ```
-
-    It is a common oversight to try to connect to localhost from the container instead.
-
+    Multiple options exist for proxying to a backend.  When proxying to localhost use `--proxy=http://host/` instead of `--proxy=http://localhost/`.  See Proxy to a local port (default) and Proxy to a Docker Compose service (advanced) for your options.
 
 And you're done! Our EmberJS development has become a lot more consistent and maintainable with the use of edi.  We have used it extensively, and have been able to reproduce builds easily in the past year.
 
 *This tutorial has been adapted from Aad Versteden's mu.semte.ch article. You can view it [here](https://mu.semte.ch/2017/03/09/developing-emberjs-with-docker/)*
+
+
+    Use `--proxy=http://host/`
+
+
+
+    It is a common oversight to try to connect to localhost from the container instead.
+
 
 ### Experimental features
 
@@ -231,15 +242,62 @@ non-interactive ember command.
  ```
 
 ### eds
-```bash
 `eds` launches the ember server for you.
 
+```bash
     # No nonsense ember server
     eds
+```
+
+#### Proxy to a local port (default)
+
+If you have a service running on a local port (ie: publishing a port through Docker), you can proxy to that host.
+
+Proxying is done to the special hostname `host` in this case, which will represent the environment which runs the Docker Ember container.
+
+The Docker Container itself is a mini virtual machine.  In this virtual machine, the name _localhost_ indicates that little virtual machine.  For example if you're using a [Semantic Works](https://semantic.works/) architecture backend, published on port 80 in a docker compose project, you can connect your development frontend to it as such:
+
+```bash
+    eds --proxy http://host/
+```
+
+For instance, to proxy to port `8080` of the machine executing the command:
+
+```bash
     # Proxying to your localhost (note it's been renamed from localhost to host)
-    eds --add-host --proxy=http://host:8080
+    eds --proxy=http://host:8080/
+```
+> [NOTE]
+> The host to proxy to is `host` in this case, not `localhost`
+
+> [NOTE]
+> This makes use of the default `--add-host` option which may become optional in the future.  For scripting, you may want to run `eds --add-host --proxy=http://host:8080/` instead to be explicit.
+
+#### Proxy to a Docker Compose service (advanced)
+
+Proxying directly to a service in a Docker Compose stack without publishing ports.
+
+Two parts need to be specified: the docker network where the service can be found, and which service to connect to in that network.  This does not require publishing a port locally.
+
+```bash
     # Proxying to a docker network
     eds --network=network-name --proxy=http://service:8080
+```
+
+For example if you're using a [Semantic Works](https://semantic.works/) architecture backend, published on port 80 in a docker compose project called `my-project`, you could connect your development frontend to it as such:
+
+```bash
+    eds --network=my-project_default --proxy http://identifier/
+```
+
+> [NOTE]
+> This is the only supported method when running [Linux configuration with rootless docker](#linux-configuration-with-rootless-docker)
+
+#### Serving on a non default port
+
+If port 4200 is already taken, `eds` can be ran on a different port.  Both `port` (which can be visited in the browser) as well as `live-reload-port` (for reloading on changes) need to be remapped.
+
+```bash
     # Serving on a non default port
     eds --port=4000 --live-reload-port=64000
 ```
@@ -269,7 +327,14 @@ and you can provide interactive answers.
     edl -u
 ```
 
-*Note*: `edl` assumes `edi` is available on your PATH
+> [NOTE]
+> `edl` assumes `edi` is available on your PATH
+
+### Proxy to the backend of a stack
+It is possible to use `eds` with a proxy to a microservice running in a local stack without port forwarding.
+
+> [NOTE]
+> The default option `--add-host` is disabled automatically when using this feature.
 
 ### Building locally
 

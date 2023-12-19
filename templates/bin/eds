@@ -46,9 +46,12 @@ do
     -a|--add-host)
         DOCKER_HOST_OPTION=$(edi_docker_host_option)
     ;;
+    -A|--no-add-host)
+        DOCKER_NO_HOST_OPTION=true
+    ;;
     -h|--help)
         echo_help
-        EMBER_ARGS="$EMBER_ARGS $i"
+        exit 0
     ;;
     *)
         # Unknown option, pass through to ember serve
@@ -56,9 +59,9 @@ do
     ;;
  esac
 done
-if [ -z "$PROXY_NETWORK_OPTION" ] && [ -z "$DOCKER_HOST_OPTION" ]
+if [ -z "$PROXY_NETWORK_OPTION" ] && [ -z "$DOCKER_HOST_OPTION" ] && [ -z "$DOCKER_NO_HOST_OPTION" ]
 then
-    echo "No --network specified, defaulting to adding a hostname in the container"
+    echo "No --network specified, defaulting to adding a hostname in the container. You can prevent this by passing --no-add-host or -A."
     DOCKER_HOST_OPTION=$(edi_docker_host_option)
 fi
 

@@ -39,7 +39,7 @@ Supported versions are the tags available at [https://hub.docker.com/r/madnifice
 
 #### Linux configuration with user namespaces (advised)
 
-By default `ed*` commands run as root in the docker container, this means newly created files will be owned as root as well. To avoid this you can use user namespaces to map the container's root user to your own user. This requires some configuration and can be done with dockerd running as root (default) or as your user (see [Configuring on Linux (rootless)](#configuring-on-linux-rootless)).
+By default `ed*` commands run as root in the docker container, this means newly created files will be owned as root as well. To avoid this you can use user namespaces to map the container's root user to your own user. This requires some configuration and can be done with dockerd running as root (default) or as your user (see [Linux configuration with rootless docker](#linux-configuration-with-rootless-docker)).
 
 > [!NOTE]
 > on ubuntu 16.04 your user needs to part of the docker group so that it has access to `/var/run/docker.sock`
@@ -72,7 +72,7 @@ More information on user namespaces is available [in the docker documentation](h
 
 #### Linux configuration with rootless docker
 
-> [NOTE]
+> [!NOTE]
 > At this point we advise to use user namespaces instead, though if you have some experience with docker then rootless docker is a bright future.
 
 More recent versions of Docker can run in 'rootless' mode, running the docker daemon as a normal user instead of root. When running in this mode, the root user inside containers is always mapped to the host user, so no special `subuid` or `subgid` configuration are required. Users inside containers with uids >0 are mapped according to the `subuid` configuration.
@@ -225,20 +225,20 @@ root of your project.
 dependencies, install new ember dependencies and run any other
 non-interactive ember command.
 ```bash
-    # Install a dependency
-    ed ember install ember-cli-coffeescript
-    # Install all current node modules
-    ed npm install
-    # Install bower components
-    ed bower install
+# Install a dependency
+ed ember install ember-cli-coffeescript
+# Install all current node modules
+ed npm install
+# Install bower components
+ed bower install
  ```
 
 ### eds
 `eds` launches the ember server for you.
 
 ```bash
-    # No nonsense ember server
-    eds
+# No nonsense ember server
+eds
 ```
 
 #### Proxy to a local port (default)
@@ -250,39 +250,42 @@ Proxying is done to the special hostname `host` in this case, which will represe
 The Docker Container itself is a mini virtual machine.  In this virtual machine, the name _localhost_ indicates that little virtual machine.  For example if you're using a [Semantic Works](https://semantic.works/) architecture backend, published on port 80 in a docker compose project, you can connect your development frontend to it as such:
 
 ```bash
-    eds --proxy http://host/
+eds --proxy http://host/
 ```
 
 For instance, to proxy to port `8080` of the machine executing the command:
 
 ```bash
-    # Proxying to your localhost (note it's been renamed from localhost to host)
-    eds --proxy=http://host:8080/
+# Proxying to your localhost (note it's been renamed from localhost to host)
+eds --proxy=http://host:8080/
 ```
-> [NOTE]
+> [!NOTE]
 > The host to proxy to is `host` in this case, not `localhost`
 
-> [NOTE]
+> [!NOTE]
 > This makes use of the default `--add-host` option which may become optional in the future.  For scripting, you may want to run `eds --add-host --proxy=http://host:8080/` instead to be explicit.
 
 #### Proxy to a Docker Compose service (advanced)
 
 Proxying directly to a service in a Docker Compose stack without publishing ports.
 
+> [!NOTE]
+> The default option `--add-host` is disabled automatically when using this feature.
+
 Two parts need to be specified: the docker network where the service can be found, and which service to connect to in that network.  This does not require publishing a port locally.
 
 ```bash
-    # Proxying to a docker network
-    eds --network=network-name --proxy=http://service:8080
+# Proxying to a docker network
+eds --network=network-name --proxy=http://service:8080
 ```
 
 For example if you're using a [Semantic Works](https://semantic.works/) architecture backend, published on port 80 in a docker compose project called `my-project`, you could connect your development frontend to it as such:
 
 ```bash
-    eds --network=my-project_default --proxy http://identifier/
+eds --network=my-project_default --proxy http://identifier/
 ```
 
-> [NOTE]
+> [!NOTE]
 > This is the only supported method when running [Linux configuration with rootless docker](#linux-configuration-with-rootless-docker)
 
 #### Serving on a non default port
@@ -290,8 +293,8 @@ For example if you're using a [Semantic Works](https://semantic.works/) architec
 If port 4200 is already taken, `eds` can be ran on a different port.  Both `port` (which can be visited in the browser) as well as `live-reload-port` (for reloading on changes) need to be remapped.
 
 ```bash
-    # Serving on a non default port
-    eds --port=4000 --live-reload-port=64000
+# Serving on a non default port
+eds --port=4000 --live-reload-port=64000
 ```
 
 ### edi
@@ -299,34 +302,28 @@ If port 4200 is already taken, `eds` can be ran on a different port.  Both `port
 `edi` is the interactive version of `ed`.  It can ask you questions
 and you can provide interactive answers.
 ```bash
-    # Generate a route
-    edi ember generate route epic-win
-    # Release a new minor version
-    edi ember release --minor
+# Generate a route
+edi ember generate route epic-win
+# Release a new minor version
+edi ember release --minor
 ```
 
 ### edl
 `edl` is your friend when developing addons. It provides a replacement for `npm link` and `npm unlink` that works in docker-ember. 
 ```bash
-    # Create a global symlink of your addon
-    cd your-ember-addon
-    edl
-    # Use that addon in another project
-    cd your-ember-project
-    edl your-ember-addon
-    # Remove the global symlink of your addon
-    cd your-ember-addon
-    edl -u
+# Create a global symlink of your addon
+cd your-ember-addon
+edl
+# Use that addon in another project
+cd your-ember-project
+edl your-ember-addon
+# Remove the global symlink of your addon
+cd your-ember-addon
+edl -u
 ```
 
-> [NOTE]
+> [!NOTE]
 > `edl` assumes `edi` is available on your PATH
-
-### Proxy to the backend of a stack
-It is possible to use `eds` with a proxy to a microservice running in a local stack without port forwarding.
-
-> [NOTE]
-> The default option `--add-host` is disabled automatically when using this feature.
 
 ### Building locally
 

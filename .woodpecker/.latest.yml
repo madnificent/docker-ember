@@ -6,6 +6,6 @@ pipeline:
       repo: "${CI_REPO_OWNER##mu-}/${CI_REPO_NAME##docker-}"
       tags: latest
     secrets: [docker_username, docker_password]
-    when:
-      event: push
-      branch: master
+when:
+  event: push
+  branch: master

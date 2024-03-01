@@ -237,8 +237,13 @@ edi_does_container_exist() {
 edi_docker_host_option() {
     if [[ "$OSTYPE" == "linux-gnu" || "$OSTYPE" == "linux" ]]
     then
-        # Linux
+      # Linux
+      if ip addr show docker0 2>/dev/null 1>/dev/null
+      then
         DOCKERHOST=`ip addr show docker0 | grep inet | head -n 1 | awk '{ print $2 }' | grep -oP "^[^/]+"`
+      else
+        exit 1
+      fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         # Mac OSX
         # Solution found via https://stackoverflow.com/questions/24319662/from-inside-of-a-docker-container-how-do-i-connect-to-the-localhost-of-the-mach
@@ -248,26 +253,6 @@ edi_docker_host_option() {
         exit 1
     fi
     echo "--add-host host:$DOCKERHOST "
-}
-
-edi_docker_server_exposed_ports_option() {
-    for i in "$@"
-    do
-      case $i in
-        -p=*|--port=*)
-          EMBER_PORT="${i#*=}"
-        ;;
-        -lrp=*|--live-reload-port=*)
-          EMBER_LIVE_RELOAD_PORT="${i#*=}"
-        ;;
-        *)
-            # unknown option
-        ;;
-     esac
-   done
-
-    echo "-p ${EMBER_PORT:-4200}:${EMBER_PORT:-4200} \
-          -p ${EMBER_LIVE_RELOAD_PORT:-49152}:${EMBER_LIVE_RELOAD_PORT:-49152} "
 }
 
 #

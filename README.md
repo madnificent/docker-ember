@@ -282,11 +282,17 @@ eds --network=network-name --proxy=http://service:8080
 For example if you're using a [Semantic Works](https://semantic.works/) architecture backend, published on port 80 in a docker compose project called `my-project`, you could connect your development frontend to it as such:
 
 ```bash
-eds --network=my-project_default --proxy http://identifier/
+eds --network=my-project_default --proxy=http://identifier/
 ```
 
 > [!NOTE]
 > This is the only supported method when running [Linux configuration with rootless docker](#linux-configuration-with-rootless-docker)
+
+#### Proxy to an external host
+
+To proxy to an external host use the `--proxy` option with no extra arguments. Some caveats exists:
+- if the backend uses HTTPS, specify the HTTPS url directly: `eds --proxy=https://semantic.works/`
+- with rootless docker you have to disable the docker network wiring using `-A` option: `eds -A --proxy=https://semantic.works/`
 
 #### Serving on a non default port
 

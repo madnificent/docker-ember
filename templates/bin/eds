@@ -44,7 +44,7 @@ do
         PROXY_NETWORK_OPTION="--network=${i#*=}"
     ;;
     -a|--add-host)
-        DOCKER_HOST_OPTION=$(edi_docker_host_option)
+        DOCKER_FORCE_HOST_OPTION=true
     ;;
     -A|--no-add-host)
         DOCKER_NO_HOST_OPTION=true
@@ -59,10 +59,22 @@ do
     ;;
  esac
 done
-if [ -z "$PROXY_NETWORK_OPTION" ] && [ -z "$DOCKER_HOST_OPTION" ] && [ -z "$DOCKER_NO_HOST_OPTION" ]
+
+if [ -n "$DOCKER_FORCE_HOST_OPTION" ] && [ -n "$DOCKER_NO_HOST_OPTION" ]
 then
-    echo "No --network specified, defaulting to adding a hostname in the container. You can prevent this by passing --no-add-host or -A."
-    DOCKER_HOST_OPTION=$(edi_docker_host_option)
+  echo "-a and -A are mutually exclusive"
+  exit 1
+elif [ -n "$DOCKER_FORCE_HOST_OPTION" ] || ([ -z "$PROXY_NETWORK_OPTION" ] && [ -z "$DOCKER_FORCE_HOST_OPTION" ] && [ -z "$DOCKER_NO_HOST_OPTION" ])
+then
+  DOCKER_HOST_OPTION=$(edi_docker_host_option)
+  if [ $? -ne 0 ]
+  then
+    echo "Could not determine docker host network. Use -A or --no-add-host to explicitly disable setting the host."
+    exit 1
+  fi
+else
+  echo -n ""
+  # No need to calculate DOCKER_HOST_OPTION
 fi
 
 EXPOSED_PORTS="-p ${EMBER_PORT:-4200}:${EMBER_PORT:-4200} \

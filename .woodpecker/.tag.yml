@@ -6,6 +6,16 @@ pipeline:
       repo: "${CI_REPO_OWNER##mu-}/${CI_REPO_NAME##docker-}"
       tags: "${CI_COMMIT_TAG##v}"
     secrets: [ docker_username, docker_password ]
+    group: build
+  release-node_18:
+    image: woodpeckerci/plugin-docker-buildx
+    settings:
+      build_args: "NODE_MAJOR=18"
+      platforms: linux/amd64,linux/arm64
+      repo: "${CI_REPO_OWNER##mu-}/${CI_REPO_NAME##docker-}"
+      tags: "${CI_COMMIT_TAG##v}-node_18"
+    group: build
+    secrets: [ docker_username, docker_password ]
 when:
   event: tag
   tag: v*

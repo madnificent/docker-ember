@@ -10,10 +10,10 @@ pipeline:
   build-and-push-node_18:
     image: woodpeckerci/plugin-docker-buildx
     settings:
-      build_args:
-        - NODE_MAJOR: "18"
+      build_args: "NODE_MAJOR=18"
       platforms: linux/amd64,linux/arm64
       repo: "${CI_REPO_OWNER##mu-}/${CI_REPO_NAME##docker-}"
+      tags: "feature-${CI_COMMIT_BRANCH##feature/}-node18"
     group: build
     secrets: [ docker_username, docker_password ]
 when:

@@ -14,6 +14,6 @@ RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources
 RUN apt-get update && apt-get -y install yarn
 
 # Install ember-cli
-RUN npm install -g ember-cli@5.4.0
+RUN npm install -g ember-cli@5.4.1
 
 WORKDIR /app

@@ -3,7 +3,7 @@
 # eg:
 #   edi ember release --minor
 
-VERSION="5.4.0"
+VERSION="6.0.0"
 
 if [ -r ~/.config/edi/settings ]
 then

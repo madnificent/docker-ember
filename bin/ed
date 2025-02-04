@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # This is the standard command to use when running non-interactive commands
 # eg:
 #   ed ember generate model post

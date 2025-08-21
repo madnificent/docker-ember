@@ -1,11 +1,14 @@
-pipeline:
+steps:
   release:
     image: woodpeckerci/plugin-docker-buildx
     settings:
       platforms: linux/amd64,linux/arm64
       repo: "${CI_REPO_OWNER##mu-}/${CI_REPO_NAME##docker-}"
       tags: "${CI_COMMIT_TAG##v}"
-    secrets: [ docker_username, docker_password ]
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
     group: build
   release-node_18:
     image: woodpeckerci/plugin-docker-buildx
@@ -14,8 +17,11 @@ pipeline:
       platforms: linux/amd64,linux/arm64
       repo: "${CI_REPO_OWNER##mu-}/${CI_REPO_NAME##docker-}"
       tags: "${CI_COMMIT_TAG##v}-node_18"
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
     group: build
-    secrets: [ docker_username, docker_password ]
 when:
-  event: tag
-  tag: v*
+  - event: tag
+    ref: refs/tags/v*

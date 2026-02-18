@@ -26,13 +26,13 @@ When visiting a folder which has a Dockerfile with a docker-ember version in it,
 
 For cases where no version can be found, docker-ember's version can be specified in `~/.config/edi/settings` using the `VERSION` variable.
 ```bash
-VERSION="5.3.0"
+VERSION="6.4.0"
 ```
 
 For one-time use, you can set `EDI_EMBER_VERSION` to the desired version:
 
 ```bash
-EDI_EMBER_VERSION="5.3.0" edi ember version
+EDI_EMBER_VERSION="6.4.0" edi ember version
 ```
 
 Supported versions are the tags available at [https://hub.docker.com/r/madnificent/ember/tags/](https://hub.docker.com/r/madnificent/ember/tags/).
@@ -334,7 +334,7 @@ edl -u
 ### Building locally
 
 To build locally in any capacity, run the [release](release) script using the desired ember-cli version.
-Example usage: `./release 4.9.2`
+Example usage: `./release 6.4.0`
 
 Several of the files in this repo are a result of building. See the table below for which files to change:
 

@@ -51,6 +51,7 @@ Assuming systemd and access to the `id` command the following steps should suffi
     echo "$( whoami ):$(id -u):65536" |  sudo tee -a /etc/subuid
     echo "$( whoami ):$(id -g):65536" |  sudo tee -a /etc/subgid
     ```
+   There might already be a mapping for your user, which needs to be deleted in order to enable the new mapping. Previously pulled Docker images will become inaccessible for your user, so delete these to save disk space before updating the mapping.
 
 > [!NOTE]
 > Using the above user maps mean that the user `0` (root) inside the container are mapped to your user id on the host, *the id for every user above that is mapped to your-id + their-id*. This means that any containers which run non-root processes could appear to be running as real users on your system. This is unlikely to cause problems unless you have an unusual user configuration.

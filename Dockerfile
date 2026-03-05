@@ -16,4 +16,7 @@ RUN apt-get update && apt-get -y install yarn
 # Install ember-cli
 RUN npm install -g ember-cli@5.12.0
 
+# Install ember-cli-update
+RUN npm install -g ember-cli-update
+
 WORKDIR /app

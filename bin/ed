@@ -173,9 +173,13 @@ edi_calculate_standard_docker_options() {
                  --volume /app/tmp"
     config_volumes=`edi_calculate_volumes_for_configuration`
     linked_volumes=`edi_calculate_linked_volumes_for_node_modules`
+    if [ -n "$EDI_DISABLE_SELINUX" ]
+    then
+       selinux_disable="--security-opt label=disable"
+    fi
     edi_calculate_ssh_agent_options # SSH_AGENT_OPTIONS
 
-    STANDARD_DOCKER_OPTIONS="$app_volumes $config_volumes $linked_volumes $SSH_AGENT_OPTIONS"
+    STANDARD_DOCKER_OPTIONS="$app_volumes $config_volumes $linked_volumes $selinux_disable $SSH_AGENT_OPTIONS"
 }
 
 # EXPOSES $EDI_DAEMON_CONTAINER_NAME

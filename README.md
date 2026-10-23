@@ -303,6 +303,20 @@ If port 4200 is already taken, `eds` can be ran on a different port.  Both `port
 eds --port=4000 --live-reload-port=64000
 ```
 
+### edn
+
+`edn` launches the development server of your app through `npm start`.  This is useful for apps whose start script runs their own dev server, such as a Vite-based setup.
+```bash
+# Serve the app through npm start
+edn
+# Serve on a non default port
+edn --port=4000
+# Proxy to a docker network
+edn --network=my-project_default --proxy=http://identifier/
+```
+
+`edn` forwards any argument other than `--network` and `--add-host` to your `npm start` script.
+
 ### edi
 
 `edi` is the interactive version of `ed`.  It can ask you questions

@@ -1,0 +1,328 @@
+#!/usr/bin/env bash
+# Serves an application with `npm start` inside the docker-ember container.
+# Publishes the app port and can proxy to a backend reachable on the host or on a
+# docker network. Extra arguments are forwarded to the npm start script.
+# eg:
+#   edn
+#   edn --port=4000
+#   edn --network=my-project_default
+
+VERSION="6.8.1"
+
+if [ -r ~/.config/edi/settings ]
+then
+    . ~/.config/edi/settings
+fi
+
+
+
+#
+# BEGIN SUPPORT SCRIPTS
+#
+# These scripts are injected into the templates as supporting code
+# which may be used by multiple scripts.
+
+# Enable SSH agent by default on Darwin
+if [[ ! ${EDI_SSH_AGENT_CONTAINER+x} ]]
+then
+   if [[ "$OSTYPE" == "darwin"* ]]
+   then
+       EDI_SSH_AGENT_CONTAINER="yes"
+   else
+       EDI_SSH_AGENT_CONTAINER=""
+   fi
+fi
+
+# Find desired docker-ember version in Dockerfile
+edi_get_version_from_dockerfile() {
+  version_from_dockerfile=""
+  if [ -f Dockerfile ]
+  then
+    version_from_dockerfile=`cat Dockerfile | sed -E -n 's/FROM\smadnificent\/ember:(\S+)(\s+.*)?/\1/p'`
+  fi
+  echo $version_from_dockerfile
+}
+
+# Calculates the desired ember version based on the current settings.
+# EXPOSES $DOCKER_IMAGE
+edi_calculate_docker_image() {
+    ember_version=""
+    if [ -n "$EDI_EMBER_VERSION" ]
+    then
+        ember_version="$EDI_EMBER_VERSION"
+    elif [ -n "$(edi_get_version_from_dockerfile)" ]
+    then
+         ember_version="$(edi_get_version_from_dockerfile)"
+    else
+        ember_version="$VERSION"
+    fi
+
+    DOCKER_IMAGE="madnificent/ember:$ember_version"
+}
+
+# Prints out the docker volume options for host configuration of git and node
+# Prevent creating empty directories on host when config files do not exist
+edi_calculate_volumes_for_configuration() {
+  config_volumes=""
+  if [ -f $HOME/.gitconfig ]
+  then
+    config_volumes="$config_volumes --volume $HOME/.gitconfig:/root/.gitconfig:delegated"
+  fi
+  if [ -f $HOME/.npmrc ]
+  then
+    config_volumes="$config_volumes --volume $HOME/.npmrc:/root/.npmrc:delegated"
+  fi
+  echo $config_volumes
+}
+
+# Prints out the docker volume options for supporting the linked
+# node_volumes as constructed by the edl command.
+edi_calculate_linked_volumes_for_node_modules() {
+    mkdir -p $HOME/.local/lib/node_modules/
+    linked_volumes=""
+
+    if [ -n "$EDI_MOUNT_ONLY_USED_LINKED_MODULES" ]
+    then
+        node_modules_next_search_folders=("./node_modules")
+        until [ "${#node_modules_next_search_folders[@]}" -eq 0 ]
+        do
+            node_modules_search_folders="${node_modules_next_search_folders[@]}"
+            node_modules_next_search_folders=()
+            # echo "Checking folders: ${node_modules_search_folders[@]}"
+            for folder in ${node_modules_search_folders[@]}
+            do
+                for file in `find "$folder" -maxdepth 2 -type l`
+                do
+                    # echo "Adding link: $file"
+                    name=`basename "$file"`
+                    dirname=`dirname "$file"`
+                    if [  $dirname != $HOME/.local/lib/node_modules ]; then
+                      name=`basename "$dirname"`/$name
+                    fi
+                    source_folder=`readlink "$HOME/.local/lib/node_modules/$name"`
+                    if [ -n $EDI_MOUNT_USED_NODE_MODULES_WITHOUT_SYMLINKS ]
+                    then
+                        linked_volumes="$linked_volumes --volume '$source_folder':/app/node_modules/$name/:cached "
+                    else
+                        linked_volumes="$linked_volumes --volume '$source_folder':/usr/lib/node_modules/$name/:cached "
+                    fi
+                    node_modules_next_search_folders=("${node_modules_next_search_folders[@]}" "$source_folder/node_modules/")
+                done
+                # echo "Current linked volumes: $linked_volumes"
+            done
+        done
+        echo "$linked_volumes"
+    else
+        for file in `find $HOME/.local/lib/node_modules/ -maxdepth 2 -type l`
+        do
+            name=`basename "$file"`
+            dirname=`dirname "$file"`
+            if [  $dirname != $HOME/.local/lib/node_modules ]; then
+              name=`basename "$dirname"`/$name
+            fi
+            real_target=`readlink "$file"`
+            linked_volumes="$linked_volumes --volume '$file':/usr/lib/node_modules/$name/:delegated "
+        done
+        echo "$linked_volumes"
+    fi
+}
+
+# Prints out docker options needed for supporting the chosen ssh
+# agent.
+# EXPOSES SSH_AGENT_OPTIONS
+edi_calculate_ssh_agent_options() {
+    mkdir -p $HOME/.ssh
+    touch $HOME/.ssh/known_hosts
+    known_hosts_volume_option="--volume $HOME/.ssh/known_hosts:/root/.ssh/known_hosts:cached "
+
+    if [ -n "$EDI_SSH_AGENT_CONTAINER" ]
+    then
+        SSH_AGENT_NAME="pinata-sshd"
+
+        # start ssh agent, which forwards ssh-socket. Known bug in
+        # docker for mac: https://github.com/docker/for-mac/issues/410
+        if [ ! "$(docker ps -q -f name=$SSH_AGENT_NAME)" ]; then
+
+            echo "Starting $SSH_AGENT_NAME"
+
+            if [ "$(docker ps -aq -f status=exited -f name=$SSH_AGENT_NAME)" ]; then
+                # cleanup
+                docker rm $SSH_AGENT_NAME
+            fi
+            pinata-ssh-forward
+            ssh-add
+        fi
+        ssh_agent_options="$(pinata-ssh-mount)"
+    elif [ -n "$SSH_AUTH_SOCK" ]
+    then
+        # see https://gist.github.com/d11wtq/8699521
+        ssh_agent_options="--volume $(dirname $SSH_AUTH_SOCK):$(dirname $SSH_AUTH_SOCK) \
+                           -e SSH_AUTH_SOCK=$SSH_AUTH_SOCK"
+    else
+        ssh_agent_options=""
+    fi
+
+    SSH_AGENT_OPTIONS="$ssh_agent_options $known_hosts_volume_option"
+}
+
+# Standard docker options including
+# - mounting of the application
+# - linked volumes for npm link
+# - options for sharing the ssh agent
+# EXPOSES $STANDARD_DOCKER_OPTIONS
+edi_calculate_standard_docker_options() {
+    app_volumes="--volume '`pwd`':/app/:cached \
+                 --volume /app/tmp"
+    config_volumes=`edi_calculate_volumes_for_configuration`
+    linked_volumes=`edi_calculate_linked_volumes_for_node_modules`
+    edi_calculate_ssh_agent_options # SSH_AGENT_OPTIONS
+
+    STANDARD_DOCKER_OPTIONS="$app_volumes $config_volumes $linked_volumes $SSH_AGENT_OPTIONS"
+}
+
+# EXPOSES $EDI_DAEMON_CONTAINER_NAME
+edi_start_edi_daemon() {
+    project_name=`basename $(pwd) | sed -e "s/ /-/g"`
+    container_name="edi-$project_name"
+
+    # sets return value
+    EDI_DAEMON_CONTAINER_NAME="$container_name"
+    DOCKER_IMAGE=$1
+    DOCKER_OPTIONS=$2
+
+    # check if daemon container runs, if not start it (and clean eventual exited containers)
+    # see https://stackoverflow.com/questions/38576337/execute-bash-command-if-docker-container-does-not-exist
+    if ! edi_does_container_exist $container_name; then
+
+        # cleanup exited edi daemon
+        if [ "$(docker ps -aq -f status=exited -f name=$container_name)" ]; then
+            docker rm $container_name
+        fi
+
+        # run new edi daemon
+        echo "Starting container named $container_name"
+
+        eval "docker run -td --name $container_name $DOCKER_OPTIONS $DOCKER_IMAGE"
+        edi_wait_for_edi_daemon $container_name
+    fi
+}
+
+edi_wait_for_edi_daemon() {
+    container_name=$1
+    max_attempts=10
+    sleep_time=1
+
+    attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        echo "Waiting for $container_name to start, attempt number $attempt"
+
+        if edi_does_container_exist $container_name && $(docker inspect -f "{{.State.Running}}" $container_name); then
+            echo "container $container_name is running, proceeding..."
+            return
+        fi
+
+        echo "Container $container_name not started, sleeping $sleep_time second(s)"
+        sleep $sleep_time
+        let attempt=$attempt+1
+    done
+
+    echo "Error: $container_name failed to start within $max_attempts attempts..."
+}
+
+edi_does_container_exist() {
+    container_name=$1
+    [ "$(docker ps -q -f name=$container_name)" ]
+    return
+}
+
+edi_docker_host_option() {
+    if [[ "$OSTYPE" == "linux-gnu" || "$OSTYPE" == "linux" ]]
+    then
+      # Linux
+      if ip addr show docker0 2>/dev/null 1>/dev/null
+      then
+        DOCKERHOST=`ip addr show docker0 | grep inet | head -n 1 | awk '{ print $2 }' | grep -oP "^[^/]+"`
+      else
+        exit 1
+      fi
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        # Mac OSX
+        # Solution found via https://stackoverflow.com/questions/24319662/from-inside-of-a-docker-container-how-do-i-connect-to-the-localhost-of-the-mach
+        DOCKERHOST=$(ifconfig | grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" | grep -v 127.0.0.1 | awk '{ print $2 }' | cut -f2 -d: | head -n1)
+    else
+        echo "OS TYPE $OSTYPE not understood"
+        exit 1
+    fi
+    echo "--add-host host:$DOCKERHOST "
+}
+
+#
+# END SUPPORT SCRIPTS
+#
+
+
+
+echo_help() {
+    echo "Serve an ember application within docker, optionally proxying to an api reachable on a docker network."
+    echo "Options:"
+    echo "-n=string|--network=string  connect the docker container to an existing docker network"
+    echo "-a|--add-host set a hostname 'host' inside the docker container that points to the host machine"
+    echo "-p=number|--port=number   serve the app on given port"
+    echo "-h|--help print this help"
+    echo "Any arguments other than --network and --add-host will be forwarded to the npm start command"
+    echo "For backwards compatibility, not specifying --network implies --add-host"
+    echo "This may fail if you're using a rootless docker daemon"
+}
+
+START_ARGS="--strictPort --host 0.0.0.0 "
+for i in "$@"
+do
+  case $i in
+    -p=*|--port=*)
+        EMBER_PORT="${i#*=}"
+        START_ARGS="$START_ARGS --port=${i#*=}"
+    ;;
+    -n=*|--network=*)
+        PROXY_NETWORK_OPTION="--network=${i#*=}"
+    ;;
+    -a|--add-host)
+        DOCKER_FORCE_HOST_OPTION=true
+    ;;
+    -A|--no-add-host)
+        DOCKER_NO_HOST_OPTION=true
+    ;;
+    -h|--help)
+        echo_help
+        exit 0
+    ;;
+    *)
+        # Unknown option, pass through to npm start
+        START_ARGS="$START_ARGS $i"
+    ;;
+ esac
+done
+
+if [ -n "$DOCKER_FORCE_HOST_OPTION" ] && [ -n "$DOCKER_NO_HOST_OPTION" ]
+then
+  echo "-a and -A are mutually exclusive"
+  exit 1
+elif [ -n "$DOCKER_FORCE_HOST_OPTION" ] || ([ -z "$PROXY_NETWORK_OPTION" ] && [ -z "$DOCKER_FORCE_HOST_OPTION" ] && [ -z "$DOCKER_NO_HOST_OPTION" ])
+then
+  DOCKER_HOST_OPTION=$(edi_docker_host_option)
+  if [ $? -ne 0 ]
+  then
+    echo "Could not determine docker host network. Use -A or --no-add-host to explicitly disable setting the host."
+    exit 1
+  fi
+else
+  # No need to calculate DOCKER_HOST_OPTION
+  :
+fi
+
+EXPOSED_PORTS="-p ${EMBER_PORT:-4200}:${EMBER_PORT:-4200} "
+
+edi_calculate_docker_image # DOCKER_IMAGE
+edi_calculate_standard_docker_options # STANDARD_DOCKER_OPTIONS
+
+eval docker run --rm -it $STANDARD_DOCKER_OPTIONS $EXPOSED_PORTS $DOCKER_HOST_OPTION $PROXY_NETWORK_OPTION $DOCKER_IMAGE npm start -- $START_ARGS

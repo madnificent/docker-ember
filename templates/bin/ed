@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# This is the standard command to use when running non-interactive commands
+# Runs a non-interactive command inside the docker-ember container.
+# The current directory is mounted at /app, so files are created in your project.
 # eg:
-#   ed ember generate model post
 #   ed npm install
-#   ed bower install
+#   ed ember build
+#   ed ember generate model post
 
 VERSION="@EMBER_VERSION"
 

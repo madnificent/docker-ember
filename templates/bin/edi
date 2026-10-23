@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# This is the command to use when running interactive commands
+# Runs an interactive command inside the docker-ember container.
+# Like ed, but with a TTY so the command can prompt for input.
 # eg:
+#   edi ember generate route hello
 #   edi ember release --minor
 
 VERSION="@EMBER_VERSION"

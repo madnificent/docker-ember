@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-# This is the command to use when running interactive commands
+# Serves an Ember application with `ember serve` inside the docker-ember container.
+# Publishes the app port and the live-reload port, and can proxy to a backend
+# reachable on the host or on a docker network.
 # eg:
-#   edi ember release --minor
+#   eds
+#   eds --proxy=http://host:8080/
+#   eds --network=my-project_default --proxy=http://backend/
 
 VERSION="@EMBER_VERSION"
 

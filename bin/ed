@@ -6,7 +6,7 @@
 #   ed ember build
 #   ed ember generate model post
 
-VERSION="5.12.0"
+VERSION="6.8.1"
 
 if [ -r ~/.config/edi/settings ]
 then

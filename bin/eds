@@ -7,7 +7,7 @@
 #   eds --proxy=http://host:8080/
 #   eds --network=my-project_default --proxy=http://backend/
 
-VERSION="5.12.0"
+VERSION="6.8.1"
 
 if [ -r ~/.config/edi/settings ]
 then
